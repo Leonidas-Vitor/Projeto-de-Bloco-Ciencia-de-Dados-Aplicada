@@ -6,7 +6,8 @@ path_to_logo = os.path.join(os.path.dirname(__file__), '..', 'image', 'Infnet_lo
 
 html_p = """<p style='text-align: center; font-size:%spx;'><b>%s</b></p>"""
 
-github_link = '''https://github.com/Leonidas-Vitor/TP1---Desenvolvimento-Front-End-com-Python'''
+github_link = '''https://github.com/Leonidas-Vitor/Projeto-de-Bloco-Ciencia-de-Dados-Aplicada'''
+
 email = '''leonidas.almeida@al.infnet.edu.br'''
 
 #st.divider()

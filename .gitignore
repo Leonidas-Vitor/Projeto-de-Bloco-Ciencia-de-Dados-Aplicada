@@ -160,4 +160,6 @@ cython_debug/
 #.idea/
 
 #Outros
-tp1_projeto_bloco_env
+projeto_bloco_env
+.code_workspace
+.ipynb
