@@ -44,6 +44,7 @@ def display_business_model_canvas():
         .key-activities { background-color: #e377c2; }
         .key-partners { background-color: #7f7f7f; }
         .cost-structure { background-color: #bcbd22; }
+        .indicators { background-color: #00008B; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -148,6 +149,18 @@ def display_business_model_canvas():
             Estrutura de Custos
             <div class="description">
                 - O projeto utilizará recursos gratuitos e open-source, portanto, não haverá custos diretos.<br>
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
+
+    st.markdown('''
+        <div class="canvas-section indicators">
+            Indicadores e metas
+            <div class="description">
+                - Coletar os dados de ações da bolsa brasileira, assim como os dados de inflação e cotação do dólar<br>
+                - Desenvolver um dashboard com as informações coletadas<br>
+                - Relacionar as informações de ações com a inflação e cotação do dólar<br>
+                - Rankear as ações com base na valorização acima da inflação e/ou acima da variação cambial<br>
             </div>
         </div>
     ''', unsafe_allow_html=True)
