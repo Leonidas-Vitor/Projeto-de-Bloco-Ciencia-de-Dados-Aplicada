@@ -163,3 +163,4 @@ cython_debug/
 projeto_bloco_env
 *.code-workspace
 *.ipynb
+data/*.txt
