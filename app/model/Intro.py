@@ -22,7 +22,7 @@ with columns[1]:
     st.markdown('''<h1 style='text-align: center; '><b>INSTITUTO INFNET</b></h1>''',unsafe_allow_html = True)
     st.markdown(html_p % tuple([35,"ESCOLA SUPERIOR DE TECNOLOGIA"]),unsafe_allow_html=True)
 st.divider()
-st.markdown(html_p % tuple([35,"TP1 - Projeto de Bloco: Ciência de Dados Aplicada"]),unsafe_allow_html=True)
+st.markdown(html_p % tuple([35,"Projeto de Bloco: Ciência de Dados Aplicada - Crescimento Real"]),unsafe_allow_html=True)
 st.markdown(html_p % tuple([25,'Aluno: Leônidas Almeida']),unsafe_allow_html = True)
 st.markdown(html_p % tuple([25,f'E-mail: <a href= mailto:{email}>{email}</a>']),unsafe_allow_html = True)
 st.markdown(html_p % tuple([25,f'GitHub: <a href={github_link}>Link para o repositório</a>']),unsafe_allow_html = True)
