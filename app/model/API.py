@@ -22,7 +22,7 @@ def create_item(item: Item):
     return {"name": item.name, "value": item.value}
 
 def run_api():
-    uvicorn.run(api, host="0.0.0.0", port=8000)
+    uvicorn.run(api, host="0.0.0.0", port=8502)
 
 api_thread = Thread(target=run_api, daemon=True)
 api_thread.start()
@@ -35,4 +35,3 @@ st.write('### GET /items/{item_id}')
 st.write('Retorna um item com o id especificado.')
 st.write('### POST /items/')
 st.write('Cria um item com o nome e valor especificados.')
-
