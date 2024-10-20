@@ -50,15 +50,15 @@ columns = st.columns([0.33, 0.33, 0.33])
 
 with columns[0]:
     st.write('**IPCA**')
-    st.dataframe(df_ipca.sample(5))
+    st.dataframe(df_ipca.sample(5),use_container_width=True)
 
 with columns[1]:
     st.write('**Dólar**')
-    st.dataframe(df_dolar.sample(5))
+    st.dataframe(df_dolar.sample(5),use_container_width=True)
 
 with columns[2]:
     st.write('**Selic**')
-    st.dataframe(df_selic.sample(5))
+    st.dataframe(df_selic.sample(5),use_container_width=True)
 
 st.write('**Ações**')
 st.dataframe(df_acoes.sample(5))

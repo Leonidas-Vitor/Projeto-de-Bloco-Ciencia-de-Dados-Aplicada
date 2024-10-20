@@ -7,9 +7,9 @@ project_charter = st.Page("model/ProjectCharter.py", title="Project Charter", ic
 data_summary_report = st.Page("model/DataSummaryReport.py", title="Data Summary Report", icon="📊")
 about = st.Page("model/About.py", title="Sobre", icon="✨")
 data_manipulation = st.Page("model/DataManipulation.py", title="Data Manipulation", icon="🧮")
-api = st.Page("model/API.py", title="API", icon="📡")
+doc_api = st.Page("model/DocAPI.py", title="Doc API", icon="📡")
 
-pg = st.navigation([intro_page, business_model_canvas, project_charter, data_summary_report, about, data_manipulation, api])
+pg = st.navigation([intro_page, business_model_canvas, project_charter, data_summary_report, about, data_manipulation, doc_api])
 
 st.set_page_config(
         page_title="Intro",

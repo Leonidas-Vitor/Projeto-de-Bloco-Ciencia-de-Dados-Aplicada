@@ -68,7 +68,8 @@ def display_business_model_canvas():
                 <div class="description">
                     ODS: Trabalho decente e Crescimento Econômico<br>
                     - Insights sobre ações em relação à inflação e ao dólar.<br>
-                    - Identificar ações com valorização acima da inflação e/ou acima da variação cambial.
+                    - Identificar ações com valorização acima da inflação e/ou acima da variação cambial.<br>
+                    - Geração de relatórios automáticos com o uso de LLMs.<br>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
@@ -79,6 +80,7 @@ def display_business_model_canvas():
                 Canais
                 <div class="description">
                     - Dashboard streamlit para visualização das ações e demais dados.<br>
+                    - Geração de relatórios automáticos com o uso de LLMs.<br>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
@@ -128,6 +130,8 @@ def display_business_model_canvas():
                 <div class="description">
                     - Coleta e atualização de dados<br>
                     - Desenvolvimento e manutenção do dashboard.<br>
+                    - Integração com LLMS para geração de relatórios automáticos.<br>
+                    - Desenvolvimento de API<br>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
