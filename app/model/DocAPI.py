@@ -9,7 +9,7 @@ st.title("Aplicação Streamlit com API Embutida")
 
 #st.components.v1.iframe(swagger_url, height=600)
 
-st.warning("A API está temporáriamente rodando localmente, portanto, a API pode não estar disponível no momento da sua solicitação.", icon="warning")
+st.warning("A API está temporáriamente rodando localmente, portanto, a API pode não estar disponível no momento da sua solicitação.", icon="⚠️")
 
 API_URL = "http://127.0.0.1:8000"
 
