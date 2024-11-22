@@ -1,184 +1,246 @@
 import streamlit as st
 import os
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
+import requests as req
+from services import ColorMethods as cm, IndicatorsMethods as im, StockMethods as sm, PlotlyMethods as pm
+from io import StringIO
+import google.generativeai as genai
 
+st.title('Crescimento Real')
+
+# Descrição
+st.subheader('Inicialização', divider=True)
 
 @st.cache_data
 def load_data():
-    df_ipca = pd.read_csv('data/ipca.csv')
-    df_dolar = pd.read_csv('data/dolar.csv')
-    df_selic = pd.read_csv('data/selic.csv')
-    df_acoes = pd.read_csv('data/media_mensal_acoes.csv')
-    return df_ipca, df_dolar, df_selic, df_acoes
+    with st.expander('', expanded=True):
+        api_url = st.session_state['config']['API_URL']
+        with st.spinner('Inicializando API'):
+            if req.get(f'{api_url}/mongodb').json()['status'] == "Successfully connected to MongoDB!":
+                st.success('API inicializada com sucesso!')
+            else:
+                st.error('Erro ao inicializar a API!')
+            loading_bar = st.progress(0)
+            loading_bar.progress(10)
+        with st.spinner('Carregando valores das ações...'):
+            df_acoes_valores = pd.read_json(StringIO(req.get(f'{api_url}/mongodb/Stocks/Prices').json()))
+            loading_bar.progress(40)
+        with st.spinner('Carregando informações das ações...'):
+            df_acoes_infos = pd.read_json(StringIO(req.get(f'{api_url}/mongodb/Stocks/Info').json()))
+            loading_bar.progress(60)
+        with st.spinner('Carregando dados do Dollar...'):
+            df_dolar = pd.read_json(StringIO(req.get(f'{api_url}/mongodb/Indicators/Dollar').json()))
+            loading_bar.progress(70)
+        with st.spinner('Carregando dados do IPCA...'):
+            df_ipca = pd.read_json(StringIO(req.get(f'{api_url}/mongodb/Indicators/IPCA').json()))
+            loading_bar.progress(80)
+        with st.spinner('Carregando dados da Selic...'):
+            df_selic = pd.read_json(StringIO(req.get(f'{api_url}/mongodb/Indicators/SELIC').json()))
+            loading_bar.progress(90)
+        with st.spinner('Finalizando carregamento...'):
 
-df_ipca, df_dolar, df_selic, df_acoes = load_data()
+            df_acoes_valores['price'] = df_acoes_valores['price'].map(sm.replace_nested_nan)
+            df_acoes_valores = sm.GetStockValorization(df_acoes_valores)
 
-#Transformação dos dados
-#df_dolar['valor'] = df_dolar['valor'].apply(lambda x: x/df_dolar['valor'].iloc[0])#Valorização do dólar desde 2019
+            df_dolar = im.GetDollarVariationData(df_dolar)
+            df_ipca = im.GetIpcaAccumulatedData(df_ipca)
+            df_selic = im.GetSelicAccumulatedData(df_selic)
 
-df_selic['data'] = df_selic['mes_ano'].apply(lambda x: x + '-01')
-df_selic['valor'] = df_selic['valor'].apply(lambda x: x/12) # Transforma a taxa anual em mensal
-df_selic = df_selic.drop(columns=['mes_ano'])
+            df_acoes_infos = df_acoes_infos.merge(sm.GetStockMonthsAboveDolar(df_acoes_valores, df_dolar), on='ticker', how='left')
+            df_acoes_valores = df_acoes_valores.merge(sm.GetStockMonthAboveDolar(df_acoes_valores, df_dolar), on=['ticker','year-month'], how='left')
 
-df_acoes['data'] = df_acoes['Month'].apply(lambda x: x + '-01')
-df_acoes = df_acoes.drop(columns=['Month'])
-df_acoes = pd.melt(df_acoes, id_vars='data', var_name='Ações', value_name='Valor')
-df_acoes.dropna(inplace=True)
-#df_acoes['valorização'] = df_acoes['Valor']/df_acoes['Valor'].iloc[0]-1
+            df_acoes_infos = df_acoes_infos.merge(sm.GetStockCurrentValorization(df_acoes_valores), on='ticker', how='left')
+            df_acoes_infos = df_acoes_infos.merge(sm.IsBDR(df_acoes_infos), on='ticker', how='left')
 
-dataframes = {'IPCA': df_ipca, 'Dólar': df_dolar, 'Selic': df_selic, 'Ações': df_acoes}
+            loading_bar.progress(100)
 
-# Título
-st.title('Visualização e Manipulação de Dados')
+        st.success('Dados carregados com sucesso!')
+    return df_ipca, df_dolar, df_selic, df_acoes_valores, df_acoes_infos
 
-# Descrição
-st.subheader('Dados disponíveis', divider=True)
-
-cols = st.columns(4)
-
-with cols[0]:
-    st.write('**IPCA**')
-    st.write(f'{df_ipca['data'].min()} a 'f'{df_ipca['data'].max()}')
-
-with cols[1]:
-    st.write('**Dólar**')
-    st.write(f'{df_dolar['data'].min()} a 'f'{df_dolar['data'].max()}')
-
-with cols[2]:
-    st.write('**Selic**')
-    st.write(f'{df_selic['data'].min()} a 'f'{df_selic['data'].max()}')
-
-with cols[3]:
-    st.write('**Ações**')
-    st.write(f'{df_acoes['data'].min()} a 'f'{df_acoes['data'].max()}')
-
-for key, df in dataframes.items():
-    df['data'] = pd.to_datetime(df['data'])
-
-st.subheader('Adicionar novos dados', divider=True)
-
-with st.expander('Clique aqui para adicionar novos dados'):
-    cols = st.columns(3)
-
-    with cols[0]:
-        tipo_dado = st.radio('Selecione o tipo de dado', ['IPCA', 'Dólar', 'Selic', 'Ações'])
-
-    with cols[1]:
-        tipo_upload = st.radio('Tipo de upload', ['Complementar', 'Substituir'])
-
-    with cols[2]:
-        uploaded_file = st.file_uploader('Selecione o arquivo CSV')
-        if uploaded_file is not None:
-            df = pd.read_csv(uploaded_file)
-            if df:
-                try :
-                    dataframes[tipo_dado] = df
-                    if tipo_upload == 'Complementar':
-                        dataframes[tipo_dado] = pd.concat([dataframes[tipo_dado], df], ignore_index=True)
-                    elif tipo_upload == 'Substituir':
-                        dataframes[tipo_dado] = df
-                    st.success('Dados carregados com sucesso!', icon="✅")
-                except:
-                    st.error('Erro ao carregar os dados. Verifique o formato do arquivo.', icon="🚨")
-
-
-st.subheader('Visualização dos dados', divider=True)
-
-start_date = pd.to_datetime(st.date_input('Data Inicial', df_acoes['data'].min()))
-end_date = pd.to_datetime(st.date_input('Data Final',  df_acoes['data'].max()))
-
-dataframes['IPCA'] = dataframes['IPCA'][(dataframes['IPCA']['data'] >= start_date) & (dataframes['IPCA']['data'] <= end_date)]
-dataframes['Dólar'] = dataframes['Dólar'][(dataframes['Dólar']['data'] >= start_date) & (dataframes['Dólar']['data'] <= end_date)]
-dataframes['Selic'] = dataframes['Selic'][(dataframes['Selic']['data'] >= start_date) & (dataframes['Selic']['data'] <= end_date)]
-dataframes['Ações'] = dataframes['Ações'][(dataframes['Ações']['data'] >= start_date) & (dataframes['Ações']['data'] <= end_date)]
-
-fig = go.Figure()
-
-fig.add_trace(go.Scatter(x=dataframes['IPCA'].data, y=dataframes['IPCA']['valor'], mode='lines', name='IPCA'))
-fig.add_trace(go.Scatter(x=dataframes['Dólar'].data, y=dataframes['Dólar']['valor'], mode='lines', name='Dólar'))
-fig.add_trace(go.Scatter(x=dataframes['Selic'].data, y=dataframes['Selic']['valor'], mode='lines', name='Selic'))
-
-fig.update_layout(title='Indicadores Econômicos',
-                  xaxis_title='Data',
-                  yaxis_title='Valor',
-                  legend_title='Indicadores')
-
-st.plotly_chart(fig, use_container_width=True)
-
-#Pegar primeira data, ultima data, preço inicial, preço final, valorização
-datas_inicial_final = dataframes['Ações'].groupby('Ações').agg({'data': ['min', 'max']})
-#datas_inicial_final.columns = datas_inicial_final.columns.droplevel()
-
-for acao in datas_inicial_final.index:
-    df = dataframes['Ações'] [dataframes['Ações'] ['Ações'] == acao]
-    datas_inicial_final.loc[acao, 'Preço Inicial'] = df[df['data'] == datas_inicial_final.loc[acao, ('data', 'min')]]['Valor'].values[0]
-    datas_inicial_final.loc[acao, 'Preço Final'] = df[df['data'] == datas_inicial_final.loc[acao, ('data', 'max')]]['Valor'].values[0]
-
-datas_inicial_final['Valorização'] = datas_inicial_final['Preço Final']/datas_inicial_final['Preço Inicial']-1
-datas_inicial_final.columns = datas_inicial_final.columns.droplevel()
-datas_inicial_final.columns = ['Data Inicial', 'Data Final', 'Preço Inicial', 'Preço Final', 'Valorização']
-
-#datas_inicial_final['Valorização'] = datas_inicial_final['Valorização'].apply(lambda x: f'{x * 100:.2f}%')
-
-acoes_ranqueadas = datas_inicial_final.sort_values('Valorização', ascending=False).head(25)
-
-st.write('**Ações Ranqueadas**')
-st.dataframe(acoes_ranqueadas, use_container_width=True)
-
-
-
-
-
-#boxplot ações
-st.subheader('Boxplot de Ações', divider=True)
-
-acoes = dataframes['Ações']['Ações'].unique()
-acoes_selecionadas = st.multiselect('Selecione as ações', acoes)
-
-cols = st.columns(2)
-with cols[0]:
-    fig = go.Figure()
-    for acao in acoes_selecionadas:
-        df = dataframes['Ações'][dataframes['Ações']['Ações'] == acao]
-        fig.add_trace(go.Box(y=df['Valor'], name=acao))
-
-    fig.update_layout(title='Boxplot de Ações',
-                        yaxis_title='Valor',
-                        legend_title='Ações')
-    st.plotly_chart(fig, use_container_width=True)
-
-with cols[1]:
-    fig = go.Figure()
-    for acao in acoes_selecionadas:
-        df = dataframes['Ações'][dataframes['Ações']['Ações'] == acao]
-        fig.add_trace(go.Scatter(x=df['data'], y=df['Valor'], mode='lines', name=acao))
+#@st.cache_data
+def filter_data():
+    df_filtered = df_acoes_infos.copy()
+    if esconder_acoes_sem_dados:
+        df_filtered = df_filtered[df_filtered['financialCurrency'].notnull()]
+    if 'BDR' not in tipo_de_acao:
+        df_filtered = df_filtered[df_filtered['BDR'] == False]
+    if 'Regular' not in tipo_de_acao:
+        df_filtered = df_filtered[df_filtered['BDR'] == True]
+    if len(estado) > 0:
+        df_filtered = df_filtered[df_filtered['state'].isin(estado)]
+    if len(pais) > 0:
+        df_filtered = df_filtered[df_filtered['country'].isin(pais)]
+    if len(industria) > 0:
+        df_filtered = df_filtered[df_filtered['industry'].isin(industria)]
+    if len(setor) > 0:
+        df_filtered = df_filtered[df_filtered['sector'].isin(setor)]
     
-    fig.update_layout(title='Valor das Ações',
-                        xaxis_title='Data',
-                        yaxis_title='Valor',
-                        legend_title='Ações')
-                    
+    df_filtered = df_filtered[(df_filtered['currentValorization'] >= intervalo_valorizacao[0]) & (df_filtered['currentValorization'] <= intervalo_valorizacao[1])]
+    df_filtered = df_filtered[(df_filtered['months_above_dolar'] >= intervalo_meses_acima_dolar[0]) & (df_filtered['months_above_dolar'] <= intervalo_meses_acima_dolar[1])]
+    return df_filtered
+    
+
+df_ipca, df_dolar, df_selic, df_acoes_valores, df_acoes_infos = load_data()
+
+df_acoes_infos_filtrado = df_acoes_infos.copy()
+
+#Filtros de ações
+cidades = df_acoes_infos['city'].unique()
+estados = df_acoes_infos['state'].unique()
+paises = df_acoes_infos['country'].unique()
+industrias = df_acoes_infos['industry'].unique()
+setores = df_acoes_infos['sector'].unique()
+meses = df_acoes_valores['year-month'].nunique()
+
+#------------------------------------------------------------
+st.subheader('Índices', divider=True)
+
+cols = st.columns([0.8,0.2])
+
+with cols[0]:
+    fig = pm.plot_indicators(df_ipca, df_dolar, df_selic)
+    st.plotly_chart(fig, use_container_width=True)
+
+with cols[1]:
+    st.write('''Ao lado pode-se ver a valorização do dólar em relação ao real desde janeiro de 2020, a inflação acumulada e a taxa Selic acumulada.''')
+    st.write('''Os dados de inflação e taxa Selic foram acumulados para facilitar a comparação com a valorização do dólar.''')
+    st.metric('Valor do dólar em janeiro de 2020', f'R${4.2689:.2f}')
+    st.metric(f'Valor do dólar em {(df_dolar["year-month"].iloc[-1])}',f'R${(df_dolar["price"].iloc[-1]):.2f}' ,f'{df_dolar["valorization"].iloc[-1]:.2f}%')
+
+#------------------------------------------------------------
+st.subheader('Ações', divider=True)
+cols = st.columns([0.2,0.8])
+with cols[0]:
+    st.write('Filtros')
+    esconder_acoes_sem_dados = st.checkbox('Esconder ações sem dados', value=True)
+    tipo_de_acao = st.multiselect('Tipo de ação', ['BDR','Regular'], default=['BDR','Regular'])
+    #cidade = st.multiselect('Cidade', cidades)
+    estado = st.multiselect('Estado', estados, default=[])
+    pais = st.multiselect('País', paises, default=[])
+    industria = st.multiselect('Indústria', industrias, default=[])
+    setor = st.multiselect('Setor', setores, default=[])
+    #mes = st.select_slider('Mês', options=meses)
+
+    intervalo_valorizacao = st.slider('Valorização mínima', min_value=df_acoes_infos_filtrado['currentValorization'].min(), 
+                                max_value=df_acoes_infos_filtrado['currentValorization'].max(), 
+                                value=(df_acoes_infos_filtrado['currentValorization'].min(), df_acoes_infos_filtrado['currentValorization'].max()))
+    
+    intervalo_meses_acima_dolar = st.slider('Meses acima do dólar', min_value=int(df_acoes_infos_filtrado['months_above_dolar'].min()),
+                                        max_value=int(df_acoes_infos_filtrado['months_above_dolar'].max()),
+                                        value=(int(df_acoes_infos_filtrado['months_above_dolar'].min()), int(df_acoes_infos_filtrado['months_above_dolar'].max())))
+
+    df_acoes_infos_filtrado = filter_data()
+
+with cols[1]:
+    fig = pm.plot_stock_scatterplot(df_acoes_infos_filtrado, df_dolar['valorization'].iloc[-1], meses)
+    st.plotly_chart(fig, use_container_width=True)
+
+#------------------------------------------------------------
+
+st.subheader('Tabela de Ações', divider=True)
+cols = st.columns([0.2,0.8])
+with cols[0]:
+    #Métrica de ações filtradas
+    st.metric('Ações filtradas', f'{df_acoes_infos_filtrado.shape[0]}')
+    st.metric('Valorização média', f'{df_acoes_infos_filtrado["currentValorization"].mean():.2f}%')
+    st.metric('Meses acima do dólar médio', f'{df_acoes_infos_filtrado["months_above_dolar"].mean():.2f}')
+    st.metric('Valorização mínima', f'{df_acoes_infos_filtrado["currentValorization"].min():.2f}%')
+    st.metric('Valorização máxima', f'{df_acoes_infos_filtrado["currentValorization"].max():.2f}%')
+
+
+with cols[1]:
+    st.dataframe(df_acoes_infos_filtrado[['ticker','longName','country','industry','sector','currentValorization','months_above_dolar']].rename(
+        columns={'longName':'Nome','country':'País','industry':'Indústria','sector':'Setor','currentValorization':'Valorização Atual',
+                'months_above_dolar':'Meses Acima do Dólar'}), height=500)
+
+#------------------------------------------------------------
+
+st.subheader('Aprofundamento', divider=True)
+
+st.write('Selecione até 5 ações para aprofundar a análise')
+
+selecionadas = st.multiselect('Selecione ações para compará-las', df_acoes_infos_filtrado['ticker'].unique(), max_selections=5)
+
+#Seleção de cor para cada ação selecionada
+cols = st.columns(5)
+cor_acoes = st.session_state.get('cor_acoes', {})
+for c in range(5):
+    with cols[c]:
+        if (c < len(selecionadas)):
+            if selecionadas[c] not in cor_acoes:
+                color = st.color_picker(f'Escolha uma cor para a ação {selecionadas[c]}', key=f'color_picker_{c}', value=cm.gerar_cor_hex())
+            else:
+                color = st.color_picker(f'Escolha uma cor para a ação {selecionadas[c]}', key=f'color_picker_{c}', value=cor_acoes[selecionadas[c]])
+            cor_acoes[selecionadas[c]] = color
+    st.session_state['cor_acoes'] = cor_acoes
+
+df_acoes_selecionadas = df_acoes_infos_filtrado[df_acoes_infos_filtrado['ticker'].isin(selecionadas)]
+cols = st.columns(2)
+
+with cols[0]:
+    fig = pm.plot_stock_boxplot(df_acoes_valores[df_acoes_valores['ticker'].isin(selecionadas)], cor_acoes)
+    st.plotly_chart(fig, use_container_width=True)
+
+with cols[1]:
+    fig = pm.plot_stock_timeline(df_acoes_valores[df_acoes_valores['ticker'].isin(selecionadas)], cor_acoes)
+    #if(st.checkbox('Mostrar valorização do dólar')):
+    #   fig.add_trace(go.Scatter(x=df_dolar['year-month'], y=df_dolar['price'], mode='lines', name='Dólar', 
+    #    line=dict(color='white', width=1, dash='dot'), line_shape='spline'))
     st.plotly_chart(fig, use_container_width=True)
 
 
+#Exibir os detalhes de cada ação na sua cor correspondente
+for acao in selecionadas:
+    with st.expander(f'Detalhes da ação {acao}', expanded=False):
+        st.write(f'**{acao}**', unsafe_allow_html=True)
+        st.write(f'<span style="color:{cor_acoes[acao]}">Nome: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longName"].values[0]}</span>', unsafe_allow_html=True)
+        st.write(f'<span style="color:{cor_acoes[acao]}">País: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["country"].values[0]}</span>', unsafe_allow_html=True)
+        st.write(f'<span style="color:{cor_acoes[acao]}">Estado: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["state"].values[0]}</span>', unsafe_allow_html=True)
+        st.write(f'<span style="color:{cor_acoes[acao]}">Indústria: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["industry"].values[0]}</span>', unsafe_allow_html=True)
+        st.write(f'<span style="color:{cor_acoes[acao]}">Setor: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["sector"].values[0]}</span>', unsafe_allow_html=True)
+        st.write(f'<span style="color:{cor_acoes[acao]}">Descrição: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longBusinessSummary"].values[0]}</span>', unsafe_allow_html=True)
+        st.write(f'<span style="color:{cor_acoes[acao]}">Website: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["website"].values[0]}</span>', unsafe_allow_html=True)
 
-st.subheader('Donwloads', divider=True)
+#------------------------------------------------------------
 
-cols = st.columns(4)
-with cols[0]:
-    st.markdown('**IPCA**')
-    st.download_button('Clique aqui para baixar os dados de IPCA', dataframes['IPCA'].to_csv(), 'ipca.csv', 'text/csv')
+st.subheader('Relatório',divider=True)
 
-with cols[1]:
-    st.markdown('**Dólar**')
-    st.download_button('Clique aqui para baixar os dados de Dólar', dataframes['Dólar'].to_csv(), 'dolar.csv', 'text/csv')
+genai.configure(api_key=st.secrets['GEMINI_KEY'])
 
-with cols[2]:
-    st.markdown('**Selic**')
-    st.download_button('Clique aqui para baixar os dados de Selic', dataframes['Selic'].to_csv(), 'selic.csv', 'text/csv')
+#st.write(st.session_state)
 
-with cols[3]:
-    st.markdown('**Ações**')
-    st.download_button('Clique aqui para baixar os dados de Ações', dataframes['Ações'].to_csv(), 'acoes.csv', 'text/csv')
+model = genai.GenerativeModel(st.session_state['gemini_config']['REPORT_CONFIG']['model']
+                              ,system_instruction = st.session_state['gemini_config']['REPORT_CONFIG']['system_instruction']
+                              ,safety_settings = st.session_state['gemini_config']['REPORT_CONFIG']['safety_settings']
+                              ,generation_config = st.session_state['gemini_config']['REPORT_CONFIG']['generation_config'])
 
+#st.markdown('R\$ 20,00 e vender em torno de R\$ 26,00')
+
+if st.button('Gerar relatório'):
+    with st.spinner('Gerando relatório...'):
+        #Incluir função de buscar no google
+        report = model.generate_content([df_acoes_selecionadas.to_json(),df_acoes_valores[df_acoes_valores['ticker'].isin(selecionadas)].to_json()
+                                         , df_dolar.to_json(), df_ipca.to_json(), df_selic.to_json()])
+        st.markdown(report.text.replace('$','\$'))
+        st.download_button('Baixar relatório', data=report.text, file_name='relatorio.txt', mime='text/plain')
+        st.write(report.usage_metadata)
+
+
+
+# pegar latitude e longitude de cada ação para plotar um mapa
+#st.map(df_acoes_infos_filtrado[['latitude','longitude']])
+
+
+
+
+#st.write('Ações')
+#st.dataframe(df_acoes_infos)
+#st.dataframe(df_acoes_valores)
+#st.write('Dolar')
+#st.dataframe(df_dolar)
+#st.write('IPCA')
+#st.dataframe(df_ipca)
+#st.write('Selic')
+#st.dataframe(df_selic)

@@ -164,3 +164,4 @@ projeto_bloco_env
 *.code-workspace
 *.ipynb
 data/*.txt
+.streamlit/secrets.toml

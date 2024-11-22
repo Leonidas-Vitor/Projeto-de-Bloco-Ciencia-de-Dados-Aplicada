@@ -38,10 +38,10 @@ st.subheader('Amostra dos Dados',divider=True)
 
 @st.cache_data
 def load_data():
-    df_ipca = pd.read_csv('data/ipca.csv')
-    df_dolar = pd.read_csv('data/dolar.csv')
-    df_selic = pd.read_csv('data/selic.csv')
-    df_acoes = pd.read_csv('data/media_mensal_acoes.csv')
+    df_ipca = pd.read_csv('data/ipca_valores.csv')
+    df_dolar = pd.read_csv('data/dolar_valores.csv')
+    df_selic = pd.read_csv('data/selic_valores.csv')
+    df_acoes = pd.read_csv('data/acoes_valores.csv')
     return df_ipca, df_dolar, df_selic, df_acoes
 
 df_ipca, df_dolar, df_selic, df_acoes = load_data()
