@@ -7,6 +7,7 @@ path_to_logo = os.path.join(os.path.dirname(__file__), '..', 'image', 'Infnet_lo
 html_p = """<p style='text-align: center; font-size:%spx;'><b>%s</b></p>"""
 
 github_link = '''https://github.com/Leonidas-Vitor/Projeto-de-Bloco-Ciencia-de-Dados-Aplicada'''
+github_api_link = '''https://github.com/Leonidas-Vitor/API_Projeto-de-Bloco-Ciencia-de-Dados-Aplicada'''
 
 email = '''leonidas.almeida@al.infnet.edu.br'''
 
@@ -25,5 +26,6 @@ st.divider()
 st.markdown(html_p % tuple([35,"Projeto de Bloco: Ciência de Dados Aplicada - Crescimento Real"]),unsafe_allow_html=True)
 st.markdown(html_p % tuple([25,'Aluno: Leônidas Almeida']),unsafe_allow_html = True)
 st.markdown(html_p % tuple([25,f'E-mail: <a href= mailto:{email}>{email}</a>']),unsafe_allow_html = True)
-st.markdown(html_p % tuple([25,f'GitHub: <a href={github_link}>Link para o repositório</a>']),unsafe_allow_html = True)
+st.markdown(html_p % tuple([25,f'GitHub Aplicação: <a href={github_link}>Link para o repositório</a>']),unsafe_allow_html = True)
+st.markdown(html_p % tuple([25,f'GitHub API: <a href={github_api_link}>Link para o repositório</a>']),unsafe_allow_html = True)
 

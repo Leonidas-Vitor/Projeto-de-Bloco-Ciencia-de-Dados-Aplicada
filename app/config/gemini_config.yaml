@@ -22,7 +22,7 @@ REPORT_CONFIG:
 
 TRANSLATE_CONFIG:
   system_instruction:
-    Traduza para o português do Brasil o texto <texto>.
+    Traduza para o português do Brasil o texto;
 
   safety_settings:
     HARM_CATEGORY_HATE_SPEECH: BLOCK_NONE
@@ -35,4 +35,4 @@ TRANSLATE_CONFIG:
     max_output_tokens: 500
     temperature: 0.2
 
-  model: gemini-1.5-pro
+  model: gemini-1.5-flash

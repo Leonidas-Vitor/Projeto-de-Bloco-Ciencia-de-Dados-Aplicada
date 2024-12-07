@@ -24,7 +24,7 @@ def plot_stock_scatterplot(df_stock_info : pd.DataFrame, currentDollarValorizati
     fig.add_trace(go.Scatter(x=[0, meses], y=[currentDollarValorization,currentDollarValorization], 
                              mode='lines', name='Dólar', line=dict(color='white', width=1, dash='dot')))
     #plotar linha vertical no meio do gráfico
-    fig.add_shape(type='line', x0=meses/2, x1=meses/2, y0=-currentDollarValorization-min_valorization-0.5, y1=max_valorization+0.5, 
+    fig.add_shape(type='line', x0=meses/2, x1=meses/2, y0=-currentDollarValorization-abs(min_valorization)-0.5, y1=max_valorization+0.5, 
                   line=dict(color='white', width=1, dash='dot'))
     #Escrever texto no gráfico
     fig.add_annotation(x=meses/4, y=currentDollarValorization+1, text='< 50% dos meses acima do dólar', showarrow=False)

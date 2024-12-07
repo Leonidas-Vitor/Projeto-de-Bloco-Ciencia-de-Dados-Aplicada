@@ -165,3 +165,7 @@ projeto_bloco_env
 *.ipynb
 data/*.txt
 .streamlit/secrets.toml
+TODO.md
+
+notebooks/
+data/

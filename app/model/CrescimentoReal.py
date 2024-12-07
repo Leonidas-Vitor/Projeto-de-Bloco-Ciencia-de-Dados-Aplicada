@@ -4,9 +4,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import requests as req
-from services import ColorMethods as cm, IndicatorsMethods as im, StockMethods as sm, PlotlyMethods as pm
+from services import ColorMethods as cm, IndicatorsMethods as im, StockMethods as sm, PlotlyMethods as pm, GeminiMethods as gm
 from io import StringIO
-import google.generativeai as genai
 
 st.title('Crescimento Real')
 
@@ -77,7 +76,7 @@ def filter_data():
     if len(setor) > 0:
         df_filtered = df_filtered[df_filtered['sector'].isin(setor)]
     
-    df_filtered = df_filtered[(df_filtered['currentValorization'] >= intervalo_valorizacao[0]) & (df_filtered['currentValorization'] <= intervalo_valorizacao[1])]
+    df_filtered = df_filtered[(df_filtered['currentValorization'] >= valorizacao_min) & (df_filtered['currentValorization'] <= valorizacao_max)]
     df_filtered = df_filtered[(df_filtered['months_above_dolar'] >= intervalo_meses_acima_dolar[0]) & (df_filtered['months_above_dolar'] <= intervalo_meses_acima_dolar[1])]
     return df_filtered
     
@@ -123,10 +122,14 @@ with cols[0]:
     setor = st.multiselect('Setor', setores, default=[])
     #mes = st.select_slider('Mês', options=meses)
 
-    intervalo_valorizacao = st.slider('Valorização mínima', min_value=df_acoes_infos_filtrado['currentValorization'].min(), 
-                                max_value=df_acoes_infos_filtrado['currentValorization'].max(), 
-                                value=(df_acoes_infos_filtrado['currentValorization'].min(), df_acoes_infos_filtrado['currentValorization'].max()))
+    #intervalo_valorizacao = st.slider('Valorização mínima', min_value=df_acoes_infos_filtrado['currentValorization'].min(), 
+    #                            max_value=df_acoes_infos_filtrado['currentValorization'].max(), 
+    #                            value=(df_acoes_infos_filtrado['currentValorization'].min(), df_acoes_infos_filtrado['currentValorization'].max()))
     
+    #adicionar um % no número
+    valorizacao_min = st.number_input('Valorização mínima', value=df_acoes_infos_filtrado['currentValorization'].min(), step=5.0, format='%.0f') 
+    valorizacao_max = st.number_input('Valorização máxima', value=df_acoes_infos_filtrado['currentValorization'].max(), step=5.0, format='%.0f')
+
     intervalo_meses_acima_dolar = st.slider('Meses acima do dólar', min_value=int(df_acoes_infos_filtrado['months_above_dolar'].min()),
                                         max_value=int(df_acoes_infos_filtrado['months_above_dolar'].max()),
                                         value=(int(df_acoes_infos_filtrado['months_above_dolar'].min()), int(df_acoes_infos_filtrado['months_above_dolar'].max())))
@@ -153,7 +156,7 @@ with cols[0]:
 with cols[1]:
     st.dataframe(df_acoes_infos_filtrado[['ticker','longName','country','industry','sector','currentValorization','months_above_dolar']].rename(
         columns={'longName':'Nome','country':'País','industry':'Indústria','sector':'Setor','currentValorization':'Valorização Atual',
-                'months_above_dolar':'Meses Acima do Dólar'}), height=500)
+                'months_above_dolar':'Meses Acima do Dólar'}), height=500, use_container_width=True)
 
 #------------------------------------------------------------
 
@@ -191,41 +194,59 @@ with cols[1]:
     st.plotly_chart(fig, use_container_width=True)
 
 
-#Exibir os detalhes de cada ação na sua cor correspondente
-for acao in selecionadas:
-    with st.expander(f'Detalhes da ação {acao}', expanded=False):
-        st.write(f'**{acao}**', unsafe_allow_html=True)
-        st.write(f'<span style="color:{cor_acoes[acao]}">Nome: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longName"].values[0]}</span>', unsafe_allow_html=True)
-        st.write(f'<span style="color:{cor_acoes[acao]}">País: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["country"].values[0]}</span>', unsafe_allow_html=True)
-        st.write(f'<span style="color:{cor_acoes[acao]}">Estado: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["state"].values[0]}</span>', unsafe_allow_html=True)
-        st.write(f'<span style="color:{cor_acoes[acao]}">Indústria: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["industry"].values[0]}</span>', unsafe_allow_html=True)
-        st.write(f'<span style="color:{cor_acoes[acao]}">Setor: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["sector"].values[0]}</span>', unsafe_allow_html=True)
-        st.write(f'<span style="color:{cor_acoes[acao]}">Descrição: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longBusinessSummary"].values[0]}</span>', unsafe_allow_html=True)
-        st.write(f'<span style="color:{cor_acoes[acao]}">Website: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["website"].values[0]}</span>', unsafe_allow_html=True)
+with st.spinner('Traduzindo textos...'):
+    #Exibir os detalhes de cada ação na sua cor correspondente
+    for acao in selecionadas:
+        with st.expander(f'Detalhes da ação {acao}', expanded=False):
+            st.write(f'**{acao}**', unsafe_allow_html=True)
+            
+            longName = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longName"].values[0]
+            st.write(f'<span style="color:{cor_acoes[acao]}">Nome: {longName}</span>', unsafe_allow_html=True)
+
+            country = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["country"].values[0]
+            st.write(f'<span style="color:{cor_acoes[acao]}">País: {country}</span>', unsafe_allow_html=True)
+
+            state = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["state"].values[0]
+            st.write(f'<span style="color:{cor_acoes[acao]}">Estado: {state}</span>', unsafe_allow_html=True)
+
+            try:
+                industry = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["industry_pt"].values[0]
+            except:
+                industry = 'Not available'
+            try:
+                sector = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["sector_pt"].values[0]
+            except:
+                sector = 'Not available'
+            try:
+                longBusinessSummary = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longBusinessSummary_pt"].values[0]
+            except:
+                longBusinessSummary = 'Not available'
+
+            industry_pt, sector_pt, longBusinessSummary_pt = gm.TranslateStocksInfo(industry, sector, longBusinessSummary)
+
+            st.write(f'<span style="color:{cor_acoes[acao]}">Indústria: {industry}</span>', unsafe_allow_html=True)
+            st.write(f'<span style="color:{cor_acoes[acao]}">Setor: {sector}</span>', unsafe_allow_html=True)
+            st.write(f'<span style="color:{cor_acoes[acao]}">Descrição: {longBusinessSummary}</span>', unsafe_allow_html=True)
+
+            st.write(f'<span style="color:{cor_acoes[acao]}">Website: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["website"].values[0]}</span>', unsafe_allow_html=True)
 
 #------------------------------------------------------------
 
 st.subheader('Relatório',divider=True)
 
-genai.configure(api_key=st.secrets['GEMINI_KEY'])
-
 #st.write(st.session_state)
 
-model = genai.GenerativeModel(st.session_state['gemini_config']['REPORT_CONFIG']['model']
-                              ,system_instruction = st.session_state['gemini_config']['REPORT_CONFIG']['system_instruction']
-                              ,safety_settings = st.session_state['gemini_config']['REPORT_CONFIG']['safety_settings']
-                              ,generation_config = st.session_state['gemini_config']['REPORT_CONFIG']['generation_config'])
+
 
 #st.markdown('R\$ 20,00 e vender em torno de R\$ 26,00')
 
 if st.button('Gerar relatório'):
     with st.spinner('Gerando relatório...'):
         #Incluir função de buscar no google
-        report = model.generate_content([df_acoes_selecionadas.to_json(),df_acoes_valores[df_acoes_valores['ticker'].isin(selecionadas)].to_json()
-                                         , df_dolar.to_json(), df_ipca.to_json(), df_selic.to_json()])
-        st.markdown(report.text.replace('$','\$'))
-        st.download_button('Baixar relatório', data=report.text, file_name='relatorio.txt', mime='text/plain')
-        st.write(report.usage_metadata)
+        report, usage = gm.GenerateReport(selecionadas, df_acoes_selecionadas, df_acoes_valores, df_dolar, df_ipca, df_selic)
+        st.markdown(report.replace('$','\$'))
+        st.download_button('Baixar relatório', data=report, file_name='relatorio.txt', mime='text/plain')
+        st.write(usage)
 
 
 
