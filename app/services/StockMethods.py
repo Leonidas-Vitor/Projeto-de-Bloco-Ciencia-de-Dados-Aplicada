@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+#import streamlit as st
 
 #Funções para processamento de dados de ações
 
@@ -43,22 +44,28 @@ def GetStockCurrentValorization(stockPrices : pd.DataFrame, year_month = '2020-0
     df = df.sort_values(by=['ticker','year-month'])
     df_ticker = pd.DataFrame()
     df_filtered = pd.DataFrame()
+    df_newStocks = pd.DataFrame()
 
     for ticker in df['ticker'].unique():
         df_ticker = df[(df['ticker'] == ticker)].copy()
         referenceValue = df_ticker[(df_ticker['year-month'] == year_month)]['price']
         currentValue = df_ticker[(df_ticker['year-month'] == df_ticker['year-month'].max())]['price']
-        if referenceValue.values[0] is np.nan:
-            referenceValue = df_ticker[(df_ticker['year-month'] is not np.nan)].sort_values(by='year-month').iloc[0]['price']
-        else:
-            referenceValue = float(referenceValue.values[0])
-        if currentValue.values[0] is np.nan:
-            currentValue = df_ticker[(df_ticker['year-month'] is not np.nan)].sort_values(by='year-month').iloc[-1]['price']
-        else:
-            currentValue = float(currentValue.values[0])
+        try:
+            if referenceValue.values[0] is np.nan:
+                referenceValue = df_ticker[(df_ticker['year-month'] is not np.nan)].sort_values(by='year-month').iloc[0]['price']
+            else:
+                referenceValue = float(referenceValue.values[0])
+            if currentValue.values[0] is np.nan:
+                currentValue = df_ticker[(df_ticker['year-month'] is not np.nan)].sort_values(by='year-month').iloc[-1]['price']
+            else:
+                currentValue = float(currentValue.values[0])
 
-        df_result = pd.DataFrame({'ticker': [ticker], 'currentValorization': (currentValue / referenceValue - 1) * 100})
-        df_filtered = pd.concat([df_filtered, df_result])
+            df_result = pd.DataFrame({'ticker': [ticker], 'currentValorization': (currentValue / referenceValue - 1) * 100})
+            df_filtered = pd.concat([df_filtered, df_result])
+        except:
+            #Ações de empresas que abriram capital recentemente
+            #Fora do escopo do projeto
+            df_newStocks = pd.concat([df_newStocks, pd.DataFrame({'ticker': [ticker], 'currentValorization': [np.nan]})])
     return df_filtered
 
 def IsBDR(stockInfo : pd.DataFrame) -> pd.DataFrame:

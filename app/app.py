@@ -7,7 +7,6 @@ intro_page = st.Page("model/Intro.py", title="Introdução", icon="📑")
 
 business_model_canvas = st.Page("model/BusinessModelCanvas.py", title="Business Model Canvas", icon="🗺️")
 project_charter = st.Page("model/ProjectCharter.py", title="Project Charter", icon="🛣️")
-data_summary_report = st.Page("model/DataSummaryReport.py", title="Data Summary Report", icon="📊")
 about = st.Page("model/About.py", title="Sobre", icon="✨")
 
 main_aplication = st.Page("model/CrescimentoReal.py", title="Crescimento Real", icon="🧮")
@@ -16,7 +15,7 @@ doc_api = st.Page("model/DocAPI.py", title="Doc API", icon="📡")
 
 pages = {
         'Introdução': [intro_page],
-        'Sobre': [business_model_canvas, project_charter, data_summary_report, about],
+        'Sobre': [about, business_model_canvas, project_charter],
         'Crescimento Real': [main_aplication, update_db, doc_api, ]
 }
 
@@ -37,9 +36,7 @@ with open('app/config/config.json', 'r') as arquivo:
 with open('app/config/gemini_config.yaml', 'r') as arquivo:
         st.session_state['gemini_config'] = yaml.safe_load(arquivo)
 
-add_logo("app/image/Infnet_logo.png", height=50)
+add_logo("images\infnet-30-horizontal-branco.png", height=156)
 
 pg.run()
-
-#st.sidebar.image("app/image/Infnet_logo.png", width=200)
 

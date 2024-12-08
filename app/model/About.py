@@ -34,31 +34,12 @@ st.markdown('''
 ''')
 
 #Amostra dos Dados
-st.subheader('Amostra dos Dados',divider=True)
+st.subheader('Data Summary Report',divider=True)
 
-@st.cache_data
-def load_data():
-    df_ipca = pd.read_csv('data/ipca_valores.csv')
-    df_dolar = pd.read_csv('data/dolar_valores.csv')
-    df_selic = pd.read_csv('data/selic_valores.csv')
-    df_acoes = pd.read_csv('data/acoes_valores.csv')
-    return df_ipca, df_dolar, df_selic, df_acoes
-
-df_ipca, df_dolar, df_selic, df_acoes = load_data()
-
-columns = st.columns([0.33, 0.33, 0.33])
-
-with columns[0]:
-    st.write('**IPCA**')
-    st.dataframe(df_ipca.sample(5),use_container_width=True)
-
-with columns[1]:
-    st.write('**Dólar**')
-    st.dataframe(df_dolar.sample(5),use_container_width=True)
-
-with columns[2]:
-    st.write('**Selic**')
-    st.dataframe(df_selic.sample(5),use_container_width=True)
-
-st.write('**Ações**')
-st.dataframe(df_acoes.sample(5))
+st.table(pd.DataFrame({
+    'Dados': ['Ações', 'Inflação', 'Dólar', 'Selic'], 
+    'Fonte': ['Yahoo Finance', 'Banco Central', 'Banco Central','Banco Central'], 
+    'Descrição': ['Dados históricos de ações da bolsa brasileira', 
+                'Índice de Preços ao Consumidor Amplo (IPCA)', 
+                'Cotação do dólar em relação ao real',
+                'Taxa Selic mensal'] })) 

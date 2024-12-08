@@ -44,7 +44,7 @@ def display_project_charter():
     - Revelar ao menos 5 ações que performaram acima da inflação e/ou da variação cambial nos últimos 12 meses.
     ''')
 
-    # Cronograma de Alta Nível
+    # Cronograma de Alto Nível
     st.subheader('Cronograma de Alto Nível')
     st.markdown('''
     - **Fase de Planejamento**: 2 semanas

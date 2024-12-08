@@ -41,6 +41,8 @@ def load_data():
         with st.spinner('Finalizando carregamento...'):
 
             df_acoes_valores['price'] = df_acoes_valores['price'].map(sm.replace_nested_nan)
+            df_acoes_valores.sort_values(by=['ticker','year-month'], inplace=True, ignore_index=True)
+            #st.dataframe(df_acoes_valores,use_container_width=True)
             df_acoes_valores = sm.GetStockValorization(df_acoes_valores)
 
             df_dolar = im.GetDollarVariationData(df_dolar)
@@ -82,6 +84,8 @@ def filter_data():
     
 
 df_ipca, df_dolar, df_selic, df_acoes_valores, df_acoes_infos = load_data()
+
+st.dataframe(df_selic, use_container_width=True)
 
 df_acoes_infos_filtrado = df_acoes_infos.copy()
 
@@ -210,23 +214,23 @@ with st.spinner('Traduzindo textos...'):
             st.write(f'<span style="color:{cor_acoes[acao]}">Estado: {state}</span>', unsafe_allow_html=True)
 
             try:
-                industry = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["industry_pt"].values[0]
+                industry = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["industry"].values[0]
             except:
                 industry = 'Not available'
             try:
-                sector = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["sector_pt"].values[0]
+                sector = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["sector"].values[0]
             except:
                 sector = 'Not available'
             try:
-                longBusinessSummary = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longBusinessSummary_pt"].values[0]
+                longBusinessSummary = df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["longBusinessSummary"].values[0]
             except:
                 longBusinessSummary = 'Not available'
 
             industry_pt, sector_pt, longBusinessSummary_pt = gm.TranslateStocksInfo(industry, sector, longBusinessSummary)
 
-            st.write(f'<span style="color:{cor_acoes[acao]}">Indústria: {industry}</span>', unsafe_allow_html=True)
-            st.write(f'<span style="color:{cor_acoes[acao]}">Setor: {sector}</span>', unsafe_allow_html=True)
-            st.write(f'<span style="color:{cor_acoes[acao]}">Descrição: {longBusinessSummary}</span>', unsafe_allow_html=True)
+            st.write(f'<span style="color:{cor_acoes[acao]}">Indústria: {industry_pt}</span>', unsafe_allow_html=True)
+            st.write(f'<span style="color:{cor_acoes[acao]}">Setor: {sector_pt}</span>', unsafe_allow_html=True)
+            st.write(f'<span style="color:{cor_acoes[acao]}">Descrição: {longBusinessSummary_pt}</span>', unsafe_allow_html=True)
 
             st.write(f'<span style="color:{cor_acoes[acao]}">Website: {df_acoes_selecionadas[df_acoes_selecionadas["ticker"] == acao]["website"].values[0]}</span>', unsafe_allow_html=True)
 
