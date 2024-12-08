@@ -85,8 +85,6 @@ def filter_data():
 
 df_ipca, df_dolar, df_selic, df_acoes_valores, df_acoes_infos = load_data()
 
-st.dataframe(df_selic, use_container_width=True)
-
 df_acoes_infos_filtrado = df_acoes_infos.copy()
 
 #Filtros de ações
