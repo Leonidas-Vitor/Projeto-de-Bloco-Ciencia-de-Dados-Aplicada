@@ -36,7 +36,7 @@ with open('app/config/config.json', 'r') as arquivo:
 with open('app/config/gemini_config.yaml', 'r') as arquivo:
         st.session_state['gemini_config'] = yaml.safe_load(arquivo)
 
-add_logo("images\infnet-30-horizontal-branco.png", height=156)
+add_logo("images/infnet-30-horizontal-branco.png", height=156)
 
 pg.run()
 
